@@ -6,22 +6,100 @@
 <title>Lost & Found Portal</title>
 <style>
   body { font-family: sans-serif; background: #f9f9f9; margin: 0; }
-  header { background: #225; color: #fff; padding: 1em; display: flex; align-items: center; justify-content: space-between; }
-  section { margin: 1em auto; padding: 1em; max-width: 600px; background: #fff; border-radius: 8px; }
-  form label { display: block; margin-top: 1em; }
-  form input, form select { width: 100%; padding: .3em; margin-top: .3em; }
-  button { background: #27a; color: #fff; padding: .6em 1.2em; border: none; border-radius: 4px; cursor: pointer; }
+  header { background: #225; color: #fff; padding: 1em; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+  section { margin: 1em auto; padding: 1em; max-width: 600px; background: #fff; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,.08); }
+  form label { display: block; margin-top: 1em; font-size: .9rem; }
+  form input, form select { width: 100%; padding: .55em .7em; margin-top: .35em; border: 1px solid #ccc; border-radius: 4px; font-size: .95rem; }
+  button { background: #2563eb; color: #fff; padding: .6em 1.1em; border: none; border-radius: 4px; cursor: pointer; font-size: .85rem; display: inline-flex; align-items: center; gap: .35em; }
+  button:hover { background:#1d4ed8; }
+  button:focus { outline: 2px solid #93c5fd; outline-offset: 2px; }
   ul { list-style: none; padding: 0; }
-  li { background: #eef; margin: .5em 0; padding: .5em; border-radius: 4px; }
-  #loading { display: none; color: #555; }
+  li { background: #eef6ff; margin: .55em 0; padding: .7em .8em; border-radius: 6px; position: relative; }
+  #loading { display: none; color: #555; font-size:.9rem; }
   #edit-modal { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.4); z-index: 1000; align-items: center; justify-content: center; }
-  #edit-modal > div { background: #fff; padding: 2em; border-radius: 8px; max-width: 400px; width: 90vw; position: relative; }
+  #edit-modal > div { background: #fff; padding: 2em; border-radius: 12px; max-width: 420px; width: 92vw; position: relative; box-shadow:0 8px 24px rgba(0,0,0,.18); }
+  .actions button { margin-right: .5em; margin-top:.5em; }
+  img.resp-img { max-width:300px; max-height:300px; width:100%; height:auto; display:block; margin:12px auto; border-radius:8px; box-shadow:0 2px 8px #aaa; object-fit:cover; }
+  #toast-container { position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%); z-index: 2000; display: flex; flex-direction: column; gap: 8px; width: min(90%, 420px); }
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #222;
+    color: #fff;
+    padding: 1em 2em;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px #0003;
+    z-index: 2000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+    font-size: 1.1em;
+  }
+  .toast.show {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(6px);} to {opacity:1; transform:translateY(0);} }
+  @media (max-width:640px) {
+    header h1 { font-size:1.2rem; flex:1 0 100%; margin:0 0 .5em; }
+    button { font-size:.75rem; }
+    li { font-size:.85rem; }
+    img.resp-img { max-height:220px; }
+  }
+  @media (max-width: 600px) {
+    section, #edit-modal > div {
+      max-width: 98vw;
+      padding: 1em;
+    }
+    .toast {
+      font-size: 1em;
+      padding: 0.7em 1em;
+    }
+    button {
+      font-size: 1em;
+      padding: .5em 1em;
+    }
+  }
+  #contact-modal {
+    display: none !important;
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0,0,0,0.4);
+    z-index: 2000;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  #contact-modal[style*="display: flex"] {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+  #contact-modal > div {
+    background: #fff;
+    padding: 2em;
+    border-radius: 8px;
+    max-width: 350px;
+    width: 90vw;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 16px #0002;
+    margin: auto !important;
+  }
 </style>
 </head>
 <body>
 <header>
   <h1>Lost & Found Portal</h1>
-  <button onclick="showForm(true)">Report Item</button>
+  <div class="actions">
+    <button onclick="showForm(true)">Report Item</button>
+  </div>
 </header>
 
 <section id="item-form" style="display:none;">
@@ -77,14 +155,34 @@
   </div>
 </section>
 
+<section id="contact-modal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.4);z-index:2000;align-items:center;justify-content:center;">
+  <div style="background:#fff;padding:2em;border-radius:8px;max-width:350px;width:90vw;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+  <button id="contact-close-btn" type="button" onclick="closeContactModal();event.stopPropagation();" style="position:absolute;top:8px;right:8px;width:36px;height:36px;font-size:2em;background:#fff;border:2px solid #888;border-radius:50%;color:#222;cursor:pointer;box-shadow:0 2px 8px #0002;z-index:3100;display:flex;align-items:center;justify-content:center;">&times;</button>
+    <h2 style="margin-bottom:1em;">Contact Owner</h2>
+    <div id="contact-email" style="word-break:break-all;font-size:1.1em;margin-bottom:1em;text-align:center;"></div>
+    <button id="copy-contact-btn" style="background:#27a;color:#fff;margin-bottom:1em;width:100%;max-width:220px;">Copy Email</button>
+    <button id="send-mail-btn" style="background:#fa0;color:#fff;width:100%;max-width:220px;">Send Email</button>
+  </div>
+</section>
+
 <section id="listings">
   <h2>All Items</h2>
   <input id="search" placeholder="Search..." oninput="fetchItems()" style="width: 100%; padding: 6px; margin-bottom: 1em;"/>
   <div id="loading">Loading items...</div>
   <ul id="items"></ul>
 </section>
+<div id="toast" class="toast"></div>
 
 <script>
+  function closeContactModal() {
+  console.log('closeContactModal called');
+  var modal = document.getElementById('contact-modal');
+  modal.style.display = 'none';
+  modal.classList.remove('show');
+  modal.classList.remove('flex');
+  modal.style.visibility = 'hidden';
+  modal.style.opacity = '0';
+}
   const apiURL = 'http://localhost:3000/api/items';
 
   function escapeHtml(text) {
@@ -134,11 +232,20 @@
         ul.innerHTML += `<li>
           <b>${escapeHtml(item.type.toUpperCase())}:</b> ${escapeHtml(item.desc)} <br />
           <i>Location: ${escapeHtml(item.location)}, Date: ${escapeHtml(item.date)}, Time: ${escapeHtml(item.time || '')}</i><br />
-          ${item.imageUrl ? `<img src="${item.imageUrl}" alt="Item Image" style="max-width:300px;max-height:300px;display:block;margin:12px auto;border-radius:8px;box-shadow:0 2px 8px #aaa;object-fit:cover;" />` : ''}
-          <button onclick="contact('${escapeHtml(item.email)}')">Contact</button>
-          <button onclick="deleteItem('${item._id}')" style="background:#c00;margin-left:8px;">Delete</button>
-          <button onclick="openEditModal(${i})" style="background:#fa0;margin-left:8px;">Edit</button>
+          ${item.imageUrl ? `<img src="${item.imageUrl}" alt="Item Image" class="resp-img" />` : ''}
+          <div class="actions">
+            <button data-contact-email="${escapeHtml(item.email)}">Contact</button>
+            <button onclick="deleteItem('${item._id}')" style="background:#dc2626;">Delete</button>
+            <button onclick="openEditModal(${i})" style="background:#f59e0b;">Edit</button>
+          </div>
         </li>`;
+// Event delegation for contact buttons
+document.getElementById('items').addEventListener('click', function(e) {
+  if (e.target && e.target.matches('button[data-contact-email]')) {
+    const email = e.target.getAttribute('data-contact-email');
+    contact(email);
+  }
+});
       });
     } catch (err) {
       loading.style.display = 'none';
@@ -146,9 +253,54 @@
     }
   }
 
-  function contact(email) {
-    alert("Contact Email: " + email);
+  function showToast(msg) {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2500);
   }
+
+  let contactEmail = '';
+  function contact(email) {
+  console.log('contact() called with:', email);
+  contactEmail = email;
+  document.getElementById('contact-email').textContent = email;
+  var modal = document.getElementById('contact-modal');
+  modal.style.display = 'flex';
+  modal.style.visibility = 'visible';
+  modal.style.opacity = '1';
+}
+  function closeContactModal() {
+    document.getElementById('contact-modal').style.display = 'none';
+  }
+  document.getElementById('copy-contact-btn').onclick = async function() {
+    if (navigator.clipboard) {
+      try {
+        await navigator.clipboard.writeText(contactEmail);
+        showToast('Contact email copied to clipboard!');
+      } catch (err) {
+        showToast('Contact email: ' + contactEmail);
+      }
+    } else {
+      const tempInput = document.createElement('input');
+      tempInput.value = contactEmail;
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      try {
+        document.execCommand('copy');
+        showToast('Contact email copied to clipboard!');
+      } catch (err) {
+        showToast('Contact email: ' + contactEmail);
+      }
+      document.body.removeChild(tempInput);
+    }
+  };
+  document.getElementById('send-mail-btn').onclick = function() {
+    const subject = encodeURIComponent('Lost & Found Portal Contact');
+    const body = encodeURIComponent('Hi,\n\nI am contacting you regarding your item listed on the Lost & Found portal.');
+    window.open(`mailto:${contactEmail}?subject=${subject}&body=${body}`, '_blank');
+    showToast('Mail app opened!');
+  };
 
   document.getElementById('reportForm').onsubmit = async function(e) {
     e.preventDefault();
@@ -240,8 +392,24 @@
     }
   };
 
+  document.getElementById('contact-close-btn').addEventListener('click', function(e) {
+    closeContactModal();
+    e.stopPropagation();
+  });
+
   // Initial load
   fetchItems();
+</script>
+<script>
+function closeContactModal() {
+  console.log('closeContactModal called');
+  var modal = document.getElementById('contact-modal');
+  modal.style.display = 'none';
+  modal.classList.remove('show');
+  modal.classList.remove('flex');
+  modal.style.visibility = 'hidden';
+  modal.style.opacity = '0';
+}
 </script>
 </body>
 </html>
